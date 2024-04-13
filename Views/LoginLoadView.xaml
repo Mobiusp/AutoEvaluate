@@ -1,0 +1,36 @@
+﻿<Page x:Class="AutoEvaluate.Views.LoginLoadView"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+      xmlns:local="clr-namespace:AutoEvaluate.Controls"
+      mc:Ignorable="d" 
+      d:DesignHeight="420" d:DesignWidth="300"
+      Title="LoginLoadView">
+
+    <Border Background="White" CornerRadius="10" PreviewMouseLeftButtonDown="LoginWindowDrag">
+        <Label HorizontalContentAlignment="Center" VerticalContentAlignment="Center">
+            <Canvas Width="{Binding Path=Width, Source={x:Reference Arc}}" Height="{Binding Path=Height, Source={x:Reference Arc}}">
+                <Canvas.Triggers>
+                    <EventTrigger RoutedEvent="Loaded">
+                        <BeginStoryboard>
+                            <Storyboard Storyboard.TargetName="Arc" RepeatBehavior="Forever">
+                                <DoubleAnimation Storyboard.TargetProperty="EndAngle" BeginTime="0:0:0" From="0" To="360" Duration="0:0:1">
+                                    <DoubleAnimation.EasingFunction>
+                                        <PowerEase Power="3" EasingMode="EaseInOut"/>
+                                    </DoubleAnimation.EasingFunction>
+                                </DoubleAnimation>
+                                <DoubleAnimation Storyboard.TargetProperty="StartAngle" BeginTime="0:0:1" From="0" To="360" Duration="0:0:1">
+                                    <DoubleAnimation.EasingFunction>
+                                        <PowerEase Power="3" EasingMode="EaseInOut"/>
+                                    </DoubleAnimation.EasingFunction>
+                                </DoubleAnimation>
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </EventTrigger>
+                </Canvas.Triggers>
+                <local:Arc x:Name="Arc" StrokeDashCap="Round" Stroke="SkyBlue" StrokeThickness="6" Diameter="100" StartAngle="0" EndAngle="360"/>
+            </Canvas>
+        </Label>
+    </Border>
+</Page>

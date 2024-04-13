@@ -1,0 +1,182 @@
+﻿<Page x:Class="AutoEvaluate.Views.LoginView"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+      xmlns:local="clr-namespace:AutoEvaluate"
+      xmlns:controls="clr-namespace:AutoEvaluate.Controls"
+      mc:Ignorable="d" 
+      d:DesignHeight="420" d:DesignWidth="300"
+      Title="Login">
+
+    <Border CornerRadius="10" PreviewMouseLeftButtonDown="LoginWindowDrag" x:Name="Border">
+        <Border.Background>
+            <RadialGradientBrush GradientOrigin="-0.6, -0.6" Center="-0.6, -0.6">
+                <GradientStop Color="SkyBlue" Offset="0"/>
+                <GradientStop Color="Snow" Offset="0.2"/>
+            </RadialGradientBrush>
+        </Border.Background>
+        <Border.Triggers>
+            <EventTrigger RoutedEvent="Loaded">
+                <BeginStoryboard>
+                    <Storyboard>
+                        <DoubleAnimation Storyboard.TargetProperty="(Border.Background).(RadialGradientBrush.GradientStops)[1].Offset"
+                        From="0.2" To="0.6" Duration="0:0:3" AutoReverse="True" RepeatBehavior="Forever"/>
+                        <PointAnimationUsingKeyFrames RepeatBehavior="Forever" Duration="0:0:31.9" Storyboard.TargetProperty="(Border.Background).(RadialGradientBrush.GradientOrigin)">
+                            <DiscretePointKeyFrame KeyTime="0:0:0" Value="-0.6, -0.6"/>
+                            <LinearPointKeyFrame KeyTime="0:0:3.9" Value="1.6, 1.6"/>
+                            
+                            <DiscretePointKeyFrame KeyTime="0:0:4" Value="0, -0.6"/>
+                            <LinearPointKeyFrame KeyTime="0:0:9.9" Value="1, 1.6"/>
+                            
+                            <DiscretePointKeyFrame KeyTime="0:0:10" Value="-0.6, 0.1"/>
+                            <LinearPointKeyFrame KeyTime="0:0:13.9" Value="1, 1.6"/>
+                            
+                            <DiscretePointKeyFrame KeyTime="0:0:14" Value="1, -0.6"/>
+                            <LinearPointKeyFrame KeyTime="0:0:17.9" Value="0, 1.6"/>
+                            
+                            <DiscretePointKeyFrame KeyTime="0:0:18" Value="-0.6, 0"/>
+                            <LinearPointKeyFrame KeyTime="0:0:21.9" Value="1.6, 1"/>
+                            
+                            <DiscretePointKeyFrame KeyTime="0:0:22" Value="-0.6, 0.3"/>
+                            <LinearPointKeyFrame KeyTime="0:0:26.9" Value="1.3, 1.6"/>
+
+                            <DiscretePointKeyFrame KeyTime="0:0:27" Value="0.6, -0.6"/>
+                            <LinearPointKeyFrame KeyTime="0:0:31.9" Value="0.4, 1.6"/>
+                        </PointAnimationUsingKeyFrames>
+                        <PointAnimationUsingKeyFrames RepeatBehavior="Forever" Duration="0:0:31.9" Storyboard.TargetProperty="(Border.Background).(RadialGradientBrush.Center)">
+                            <DiscretePointKeyFrame KeyTime="0:0:0" Value="-0.6, -0.6"/>
+                            <LinearPointKeyFrame KeyTime="0:0:3.9" Value="1.6, 1.6"/>
+
+                            <DiscretePointKeyFrame KeyTime="0:0:4" Value="0, -0.6"/>
+                            <LinearPointKeyFrame KeyTime="0:0:9.9" Value="1, 1.6"/>
+
+                            <DiscretePointKeyFrame KeyTime="0:0:10" Value="-0.6, 0.1"/>
+                            <LinearPointKeyFrame KeyTime="0:0:13.9" Value="1, 1.6"/>
+
+                            <DiscretePointKeyFrame KeyTime="0:0:14" Value="1, -0.6"/>
+                            <LinearPointKeyFrame KeyTime="0:0:17.9" Value="0, 1.6"/>
+
+                            <DiscretePointKeyFrame KeyTime="0:0:18" Value="-0.6, 0"/>
+                            <LinearPointKeyFrame KeyTime="0:0:21.9" Value="1.6, 1"/>
+
+                            <DiscretePointKeyFrame KeyTime="0:0:22" Value="-0.6, 0.3"/>
+                            <LinearPointKeyFrame KeyTime="0:0:26.9" Value="1.3, 1.6"/>
+
+                            <DiscretePointKeyFrame KeyTime="0:0:27" Value="0.6, -0.6"/>
+                            <LinearPointKeyFrame KeyTime="0:0:31.9" Value="0.4, 1.6"/>
+                        </PointAnimationUsingKeyFrames>
+                    </Storyboard>
+                </BeginStoryboard>
+            </EventTrigger>
+        </Border.Triggers>
+        <Grid Height="420">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="30"/>
+                <RowDefinition Height="110"/>
+                <RowDefinition/>
+                <RowDefinition/>
+                <RowDefinition Height="66"/>
+                <RowDefinition/>
+                <RowDefinition Height="36"/>
+            </Grid.RowDefinitions>
+            <Canvas Grid.Row="0" Grid.RowSpan="2" Grid.Column="0" Focusable="False">
+                <Label VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Content="─" FontSize="18" 
+                Canvas.Top="0" Canvas.Right="30" Width="30" Height="30" MouseLeftButtonUp="MinimizeBtn">
+                    <Label.Resources>
+                        <Style TargetType="Label">
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="Gray"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Label.Resources>
+                </Label>
+                <Label VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Content="✕" FontSize="18" 
+                Canvas.Top="0" Canvas.Right="0" Width="30" Height="30" MouseLeftButtonUp="CloseBtn">
+                    <Label.Resources>
+                        <Style TargetType="{x:Type Border}">
+                            <Setter Property="CornerRadius" Value="0 10 0 0"/>
+                        </Style>
+                        <Style TargetType="Label">
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="Red"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Label.Resources>
+                </Label>
+            </Canvas>
+            <TextBlock VerticalAlignment="Bottom" Margin="0 0 0 18" Foreground="LightSlateGray" Grid.Row="1" HorizontalAlignment="Center" Text="Auto Evaluate" FontSize="30">
+                <TextBlock.Effect>
+                    <DropShadowEffect Color="SkyBlue" ShadowDepth="6" BlurRadius="10"/>
+                </TextBlock.Effect>
+            </TextBlock>
+            <Grid Grid.Row="2" Width="180" Height="30">
+                <TextBox HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Text="" x:Name="username" Background="Transparent" 
+                    Panel.ZIndex="2" InputMethod.IsInputMethodEnabled="False" TabIndex="0" PreviewTextInput="UserNamePreviewInput">
+                    <TextBox.Resources>
+                        <Style TargetType="{x:Type Border}">
+                            <Setter Property="CornerRadius" Value="5"/>
+                        </Style>
+                    </TextBox.Resources>
+                </TextBox>
+                <TextBox HorizontalContentAlignment="Center" VerticalContentAlignment="Center"  Text="请输入学号" Panel.ZIndex="1" Focusable="False">
+                    <TextBox.Style>
+                        <Style TargetType="{x:Type TextBox}">
+                            <Setter Property="Foreground" Value="Transparent"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Path=Text, Source={x:Reference username}}" Value="">
+                                    <Setter Property="Foreground" Value="Gray"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBox.Style>
+                    <TextBox.Resources>
+                        <Style TargetType="{x:Type Border}">
+                            <Setter Property="CornerRadius" Value="5"/>
+                        </Style>
+                    </TextBox.Resources>
+                </TextBox>
+            </Grid>
+            <Grid Grid.Row="3" Width="180" Height="30">
+                <controls:TextPasswordBox HorizontalContentAlignment="Center" VerticalContentAlignment="Center" x:Name="password" 
+                        Background="Transparent" Panel.ZIndex="2" InputMethod.IsInputMethodEnabled="False" Focusable="True" TabIndex="1" FontSize="10">
+                    <TextBox.Resources>
+                        <Style TargetType="{x:Type Border}">
+                            <Setter Property="CornerRadius" Value="5"/>
+                        </Style>
+                    </TextBox.Resources>
+                </controls:TextPasswordBox>
+                <TextBox HorizontalContentAlignment="Center" VerticalContentAlignment="Center"  Text="请输入密码" Panel.ZIndex="1" Focusable="False">
+                    <TextBox.Style>
+                        <Style TargetType="{x:Type TextBox}">
+                            <Setter Property="Foreground" Value="Transparent"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Path=Text, Source={x:Reference password}}" Value="">
+                                    <Setter Property="Foreground" Value="Gray"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBox.Style>
+                    <TextBox.Resources>
+                        <Style TargetType="{x:Type Border}">
+                            <Setter Property="CornerRadius" Value="5"/>
+                        </Style>
+                    </TextBox.Resources>
+                </TextBox>
+            </Grid>
+            <Button x:Name="loginBtn" Grid.Row="4" Content="登录" Width="100" Height="30" FontSize="15" Foreground="White" Background="SkyBlue" Click="BtnClick">
+                <Button.Resources>
+                    <Style TargetType="{x:Type Border}">
+                        <Setter Property="CornerRadius" Value="3"/>
+                    </Style>
+                </Button.Resources>
+            </Button>
+        </Grid>
+    </Border>
+</Page>
