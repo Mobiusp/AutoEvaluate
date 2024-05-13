@@ -84,7 +84,7 @@ Canvas.Top="0" Canvas.Right="0" Width="30" Height="30" MouseLeftButtonUp="CloseB
                     </TextBlock>
                     <Image Width="24" Height="24" MouseLeftButtonUp="GithubBtn">
                         <Image.Source>
-                            <BitmapImage UriSource="E:\vs\Csharp\AutoEvaluate\AutoEvaluate\Images\github.png"/>
+                            <BitmapImage UriSource="pack://siteoforigin:,,,./github.png"/>
                         </Image.Source>
                         <Image.Style>
                             <Style TargetType="Image">
