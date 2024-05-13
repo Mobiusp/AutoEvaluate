@@ -1,5 +1,5 @@
 # AutoEvaluate
-适用于 **WHUT** 的桌面端自动评教脚本，更新时间：2024.04.13。
+适用于 **WHUT** 的桌面端自动评教脚本，更新时间：2024.05.13。
 ## 版本
 * [油猴脚本](https://github.com/Mobiusp/AutoEvaluate.js)
 * [桌面端应用程序](https://github.com/Mobiusp/AutoEvaluate)
