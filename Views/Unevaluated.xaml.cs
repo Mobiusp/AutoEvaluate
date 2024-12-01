@@ -93,7 +93,7 @@ namespace AutoEvaluate.Views
                 bool result = await Evaluate.EvaluateCourse(item);
                 if (result)
                 {
-                    ListViewItem t = (ListViewItem)listView.ItemContainerGenerator.ContainerFromItem(evaluationItems[need[ind]]);
+                    ListViewItem t = (ListViewItem)listView.ItemContainerGenerator.ContainerFromItem(evaluationItems[need[ind] - ind]);
                     var container = VisualTreeHelper.GetChild((VisualTreeHelper.GetChild(t, 0) as Border)!.Child, 0);
                     var storyborad = (((container as Grid)!.FindName("CommonStates") as VisualStateGroup)!.States[1] as VisualState)!.Storyboard;
                     storyborad.Completed += (s, args) =>
