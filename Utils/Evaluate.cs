@@ -4,7 +4,9 @@ using System.Net.Http.Json;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using Newtonsoft.Json;
 using HtmlAgilityPack;
+using System.Collections;
 
 namespace AutoEvaluate.Utils
 {
@@ -12,250 +14,189 @@ namespace AutoEvaluate.Utils
     {
 
         private static CookieContainer? loginCookie = null;
-        private static CookieContainer? evaluationCookie = null;
         private static HttpClient? evaluateClient = null;
+        private static string un, pw;
 
-        public static async Task InitEvaluateClient()
+        public static async Task<(bool, string)> Login(string username1, string password1)
         {
-            if (evaluateClient == null)
+            try
             {
-                bool res = await RefreshCookie();
-                if (! res) return;
-                var handler = new HttpClientHandler() { CookieContainer = evaluationCookie!, AllowAutoRedirect = false };
+                un = username1;
+                pw = password1;
+                var cookie = new CookieContainer();
+                var handler = new HttpClientHandler() { CookieContainer = cookie, AllowAutoRedirect = false };
+                using HttpClient client = new HttpClient(handler);
+                client.Timeout = TimeSpan.FromSeconds(15);
+                client.DefaultRequestHeaders.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7");
+                client.DefaultRequestHeaders.Add("Accept-Language", "zh-CN,zh;q=0.9");
+                client.DefaultRequestHeaders.Add("Connection", "keep-alive");
+                client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36");
+                client.DefaultRequestHeaders.Add("Sec-Fetch-Dest", "empty");
+                client.DefaultRequestHeaders.Add("Sec-Fetch-Mode", "cors");
+                client.DefaultRequestHeaders.Add("Sec-Fetch-Site", "same-origin");
+                client.DefaultRequestHeaders.Add("X-Requested-With", "XMLHttpRequest");
+                client.DefaultRequestHeaders.Add("sec-ch-ua", "\"Google Chrome\";v=\"131\",\"Chromium\";v=\"131\",\"Not_A Brand\";v=\"24\"");
+                client.DefaultRequestHeaders.Add("sec-ch-ua-mobile", "?0");
+                client.DefaultRequestHeaders.Add("sec-ch-ua-platform", "\"Windows\"");
+
+                var res = await client.GetStringAsync("https://zhlgd.whut.edu.cn/tpass/login?service=https%3A%2F%2Fzhlgd.whut.edu.cn%2Ftp_up%2F");
+                var html = new HtmlDocument();
+                html.LoadHtml(res);
+                var lt = html.DocumentNode.SelectSingleNode("//*[@id=\"lt\"]").GetAttributeValue("value", "");
+
+                var response = await client.PostAsync("https://zhlgd.whut.edu.cn/tpass/rsa?skipWechat=true", null);
+                var json = await response.Content.ReadFromJsonAsync<JsonElement>();
+                var key = json.GetProperty("publicKey").GetString();
+
+                RSACryptoServiceProvider rsa = new RSACryptoServiceProvider();
+                rsa.ImportSubjectPublicKeyInfo(Convert.FromBase64String(key!), out _);
+
+                var encryptedUN = Convert.ToBase64String(rsa.Encrypt(Encoding.UTF8.GetBytes(username1), false));
+                var encryptedPW = Convert.ToBase64String(rsa.Encrypt(Encoding.UTF8.GetBytes(password1), false));
+
+                var form = new Dictionary<string, string>() {
+                {"rsa", ""},
+                {"ul",encryptedUN },
+                {"pl",encryptedPW },
+                {"lt",lt },
+                {"execution", "e1s1" },
+                {"_eventId", "submit" },
+            };
+                response = await client.PostAsync("https://zhlgd.whut.edu.cn/tpass/login?service=https%3A%2F%2Fzhlgd.whut.edu.cn%2Ftp_up%2F", new FormUrlEncodedContent(form));
+                if (response.StatusCode == HttpStatusCode.OK)
+                {
+                    return (false, "用户名或密码错误");
+                }
+                var location = response.Headers.Location;
+                response = await client.GetAsync(location);
+                location = response.Headers.Location;
+                response = await client.GetAsync(location);
+                location = response.Headers.Location;
+                response = await client.GetAsync(location);
+                location = response.Headers.Location;
+                response = await client.GetAsync(location);
+
+                client.DefaultRequestHeaders.Remove("X-Requested-With");
+                response = await client.GetAsync("https://jwxt.whut.edu.cn/jwapp/sys/homeapp/index.do?forceCas=1");
+                location = response.Headers.Location;
+                response = await client.GetAsync(location);
+                location = response.Headers.Location;
+                response = await client.GetAsync(location);
+                location = response.Headers.Location;
+                response = await client.GetAsync(location);
+                location = new Uri("https://jwxt.whut.edu.cn/jwapp/sys/homeapp/home/index.html?av=1732803051828&contextPath=/jwapp");
+                response = await client.GetAsync(location);
+                loginCookie = cookie;
+                handler = new HttpClientHandler() { CookieContainer = loginCookie, AllowAutoRedirect = false };
                 evaluateClient = new HttpClient(handler);
                 evaluateClient.Timeout = TimeSpan.FromSeconds(15);
                 evaluateClient.DefaultRequestHeaders.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7");
                 evaluateClient.DefaultRequestHeaders.Add("Accept-Language", "zh-CN,zh;q=0.9");
                 evaluateClient.DefaultRequestHeaders.Add("Connection", "keep-alive");
                 evaluateClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36");
+                evaluateClient.DefaultRequestHeaders.Add("Sec-Fetch-Dest", "empty");
+                evaluateClient.DefaultRequestHeaders.Add("Sec-Fetch-Mode", "cors");
+                evaluateClient.DefaultRequestHeaders.Add("Sec-Fetch-Site", "same-origin");
+                evaluateClient.DefaultRequestHeaders.Add("sec-ch-ua", "\"Google Chrome\";v=\"131\",\"Chromium\";v=\"131\",\"Not_A Brand\";v=\"24\"");
+                evaluateClient.DefaultRequestHeaders.Add("sec-ch-ua-mobile", "?0");
+                evaluateClient.DefaultRequestHeaders.Add("sec-ch-ua-platform", "\"Windows\"");
             }
-        }
-
-        public static async Task<(bool, string)> Login(string username1, string password1)
-        {
-            try
+            catch (Exception)
             {
-                var cookie = new CookieContainer();
-                var handler = new HttpClientHandler() { CookieContainer = cookie, AllowAutoRedirect = false };
-                using HttpClient client = new HttpClient(handler);
-                client.Timeout = TimeSpan.FromSeconds(15);
-                client.DefaultRequestHeaders.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7");
-                client.DefaultRequestHeaders.Add("Accept-Language", "zh-CN,zh;q=0.9");
-                client.DefaultRequestHeaders.Add("Connection", "keep-alive");
-                client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36");
-
-                var text = await client.GetStringAsync("http://sso.jwc.whut.edu.cn/Certification/toIndex.do");
-                var html = new HtmlDocument();
-                html.LoadHtml(text);
-
-                var fingerPrint = "b9a7a7901c83c4c0dad90bd2bbf19498";
-                var postData = new HttpRequestMessage(HttpMethod.Post, "http://sso.jwc.whut.edu.cn/Certification/getCode.do");
-                postData.Content = new FormUrlEncodedContent(new Dictionary<string, string>()
-                {
-                    {"webfinger", fingerPrint }
-                });
-                var httpCode = await client.SendAsync(postData);
-                var code = await httpCode.Content.ReadAsStringAsync();
-
-                var pwSha1 = SHA1.Create().ComputeHash(Encoding.UTF8.GetBytes(username1 + password1));
-                var pwBuilder = new StringBuilder();
-                foreach (var key in pwSha1) pwBuilder.Append(key.ToString("x2"));
-                var usernameMD5 = MD5.Create().ComputeHash(Encoding.UTF8.GetBytes(username1));
-                var unBuilder = new StringBuilder();
-                foreach (var key in usernameMD5) unBuilder.Append(key.ToString("x2"));
-
-                var form = new Dictionary<string, string>() {
-                    { "MsgID", ""}, {"KeyID", ""}, {"UserName", "" }, {"Password", ""},
-                    { "rnd", html.DocumentNode.SelectSingleNode("//form/input[@name='rnd']").GetAttributeValue("value", "") },
-                    {"return_EncData", "" }, {"code", code},
-                    { "userName1", unBuilder.ToString() }, {"password1", pwBuilder.ToString() },
-                    { "webfinger",  fingerPrint}, {"falg", ""}, {"type", "xs" }, {"userName", "" }, {"password", "" }
-                };
-                var res = await client.PostAsync("http://sso.jwc.whut.edu.cn/Certification/login.do", new FormUrlEncodedContent(form));
-                text = await res.Content.ReadAsStringAsync();
-                if (text.IndexOf("用户名或密码错误") != -1) return (false, "用户名或密码错误");
-                loginCookie = cookie;
-            }catch (Exception)
-            {
-                return (false, "登录失败，请重试或确认网络状态（最好使用校园网）以及教务系统是否正常。\n如无法解决请反馈。≧ ﹏ ≦");
+                return (false, "登录失败，请重试或确认网络状态以及教务系统是否正常。\n如无法解决请反馈。≧ ﹏ ≦");
             }
             return (true, "success");
         }
 
-        public static async Task<bool> RefreshCookie()
+        public static async Task<(bool, string)> Refresh()
         {
-            try
-            {
-                if (loginCookie == null) return false;
-                var cookie = new CookieContainer();
-                var handler = new HttpClientHandler() { CookieContainer = cookie, AllowAutoRedirect = false };
-                using HttpClient client = new HttpClient(handler);
-                client.Timeout = TimeSpan.FromSeconds(15);
-                client.DefaultRequestHeaders.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7");
-                client.DefaultRequestHeaders.Add("Accept-Language", "zh-CN,zh;q=0.9");
-                client.DefaultRequestHeaders.Add("Connection", "keep-alive");
-                client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36");
-
-                var res = await client.GetAsync("http://218.197.101.69:8080/edu/union");
-                var nextLocation = res.Headers.Location;
-
-                var tempHandler = new HttpClientHandler() { CookieContainer = loginCookie, AllowAutoRedirect = false };
-                using (var tempClient = new HttpClient(tempHandler))
-                {
-                    tempClient.Timeout = TimeSpan.FromSeconds(15);
-                    tempClient.DefaultRequestHeaders.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7");
-                    tempClient.DefaultRequestHeaders.Add("Accept-Language", "zh-CN,zh;q=0.9");
-                    tempClient.DefaultRequestHeaders.Add("Connection", "keep-alive");
-                    tempClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36");
-                    res = await tempClient.GetAsync(nextLocation);
-                    nextLocation = res.Headers.Location;
-                }
-
-                res = await client.GetAsync(nextLocation);
-                evaluationCookie = cookie;
-            }catch(Exception)
-            {
-                return false;
-            }
-            return true;
+            return await Login(un, pw);
         }
 
         public static async Task<EvaluationData?> GetEvaluationData(bool isRefreshCookie = false)
         {
-            if (loginCookie == null) return null;
-            if (evaluationCookie == null || isRefreshCookie)
-            {
-                bool flag = await RefreshCookie();
-                if (! flag) return null;
-            }
+            if (evaluateClient == null) return null;
             var result = new EvaluationData();
             try
             {
-                var handler = new HttpClientHandler() { CookieContainer = evaluationCookie!, AllowAutoRedirect = false };
-                using HttpClient client = new HttpClient(handler);
-                client.Timeout = TimeSpan.FromSeconds(15);
-                client.DefaultRequestHeaders.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7");
-                client.DefaultRequestHeaders.Add("Accept-Language", "zh-CN,zh;q=0.9");
-                client.DefaultRequestHeaders.Add("Connection", "keep-alive");
-                client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36");
+                var form = new Dictionary<string, string>()
+            {
+                {"ZCSDM", "DQXNXQDM" },
+                { "CSDM", "SYS" },
+                {"SFSY", "1" },
+                { "*order", "-DM" },
+            };
 
-                var res = await client.GetStringAsync("http://218.197.101.69:8080/edu/task/deal?kind=1");
-                if (res.IndexOf("loginError") != -1)
-                {
-                    await RefreshCookie();
-                    res = await client.GetStringAsync("http://218.197.101.69:8080/edu/task/deal?kind=1");
-                }
-                var html = new HtmlDocument();
-                html.LoadHtml(res);
+                var json = await (await evaluateClient.PostAsync("https://jwxt.whut.edu.cn/jwapp/sys/jwpubapp/modules/gg/cxmrxnxq.do", new FormUrlEncodedContent(form))).Content.ReadFromJsonAsync<JsonElement>();
 
-                var xnxq = html.DocumentNode.SelectSingleNode("//form/select[@id='xnxq']/option[@selected]").InnerText;
-                var objId = html.DocumentNode.SelectSingleNode("//form[@id='form']/input[@name='objId']").GetAttributeValue("value", "");
-                for (int i = 1; i <= 6; ++i)
+                var xnxqdm = json.GetProperty("datas").GetProperty("cxmrxnxq").GetProperty("rows")[0].GetProperty("XNXQDM").GetString();
+
+                form = new Dictionary<string, string>()
+            {
+                {"PJLXDM","01" },
+                {"querySetting", $"[{{\"name\":\"XNXQDM\",\"builder\":\"m_value_equal\",\"linkOpt\":\"AND\",\"value\":\"{xnxqdm}\"}}]" },
+            };
+
+                var response = await evaluateClient.PostAsync("https://jwxt.whut.edu.cn/jwapp/sys/pjapp/api/wdpj/getDpwj.do", new FormUrlEncodedContent(form));
+                json = await response.Content.ReadFromJsonAsync<JsonElement>();
+                foreach (var item in json.GetProperty("datas").GetProperty("getDpwj").EnumerateArray())
                 {
-                    var form = new Dictionary<string, string>()
-                {
-                    { "objId", objId},
-                    { "teacherId", "" },
-                    { "kind", "1" },
-                    {"status", "" },
-                    {"xnxq", xnxq },
-                    {"page", i.ToString() },
-                    {"rows", "50" },
-                    {"sort", "a.status" },
-                    {"order", "asc" },
-                    { "total", "-1" }
-                };
-                    var response = await client.PostAsync("http://218.197.101.69:8080/edu/task/page", new FormUrlEncodedContent(form));
-                    var json = await response.Content.ReadFromJsonAsync<JsonElement>();
-                    var evaluationT = json.GetProperty("data").GetProperty("easyuiData");
-                    foreach (var item in evaluationT.GetProperty("rows").EnumerateArray())
+                    var s = Convert.ToDateTime(item.GetProperty("KSSJ").GetString()!);
+                    var e = Convert.ToDateTime(item.GetProperty("JSSJ").GetString());
+                    if (DateTime.Now < s || DateTime.Now > e)
                     {
-                        if (item.GetProperty("status").GetString() == "0")
-                        {
-                            if (item.GetProperty("canEval").GetBoolean()) result.Unevaluated.Add(new EvaluationItem(
-                                item.GetProperty("id").GetString()!, item.GetProperty("teacherName").GetString()!,
-                                item.GetProperty("teacherKcmc").GetString()!, item.GetProperty("endTime").GetString()!));
-                            else result.UnexpiredOrNotStarted.Add(new EvaluationItem(
-                                item.GetProperty("id").GetString()!, item.GetProperty("teacherName").GetString()!,
-                                item.GetProperty("teacherKcmc").GetString()!, item.GetProperty("endTime").GetString()!));
-                        }
-                        else if (item.GetProperty("status").GetString() == "1") result.Evaluated.Add(new EvaluationItem(
-                                item.GetProperty("id").GetString()!, item.GetProperty("teacherName").GetString()!,
-                                item.GetProperty("teacherKcmc").GetString()!, item.GetProperty("submitTime").GetString()!));
-                        else if (item.GetProperty("status").GetString() == "2") result.UnexpiredOrNotStarted.Add(new EvaluationItem(
-                                item.GetProperty("id").GetString()!, item.GetProperty("teacherName").GetString()!,
-                                item.GetProperty("teacherKcmc").GetString()!, item.GetProperty("endTime").GetString()!));
+                        result.UnexpiredOrNotStarted.Add(new EvaluationItem(item.GetProperty("SKDX").GetString()!, item.GetProperty("KCM").GetString()!,
+                                           item.GetProperty("GROUPNO").GetString()!, item.GetProperty("PJLXDM").GetString()!,
+                                           item.GetProperty("XUH").GetInt32()!, item.GetProperty("JSSJ").GetString()!));
                     }
-                    if (evaluationT.GetProperty("total").GetInt32() <= 50 * i) break;
+                    else
+                    {
+                        result.Unevaluated.Add(new EvaluationItem(item.GetProperty("SKDX").GetString()!, item.GetProperty("KCM").GetString()!,
+                                            item.GetProperty("GROUPNO").GetString()!, item.GetProperty("PJLXDM").GetString()!,
+                                            item.GetProperty("XUH").GetInt32()!, item.GetProperty("JSSJ").GetString()!));
+                    }
+
+                }
+
+                response = await evaluateClient.PostAsync("https://jwxt.whut.edu.cn/jwapp/sys/pjapp/api/wdpj/getYpwj.do", new FormUrlEncodedContent(form));
+                json = await response.Content.ReadFromJsonAsync<JsonElement>();
+                foreach (var item in json.GetProperty("datas").GetProperty("getYpwj").EnumerateArray())
+                {
+                    result.Evaluated.Add(new EvaluationItem(item.GetProperty("SKDX").GetString()!, item.GetProperty("KCM").GetString()!,
+                                            item.GetProperty("GROUPNO").GetString()!, item.GetProperty("PJLXDM").GetString()!,
+                                            item.GetProperty("XUH").GetInt32()!, item.GetProperty("JSSJ").GetString()!));
                 }
             }
-            catch (Exception)
+            catch(Exception)
             {
                 return null;
             }
+
             return result;
         }
 
-        public static async Task<bool> EvaluateCourse(string id)
+        public static async Task<bool> EvaluateCourse(EvaluationItem item)
         {
             if (evaluateClient == null) return false;
             try
             {
-                var res = await evaluateClient.GetStringAsync("http://218.197.101.69:8080/edu/task/evaluate/" + id);
-                var html = new HtmlDocument();
-                html.LoadHtml(res);
-
-                var htmlForm = html.DocumentNode.SelectSingleNode("//div[@class='form-table']");
-                var dict = new Dictionary<string, object>()
+                var form = new Dictionary<string, string>()
                 {
-                    {"taskId", htmlForm.SelectSingleNode("input[@name='taskId']").GetAttributeValue("value", "")},
-                    {"dataId", htmlForm.SelectSingleNode("input[@name='dataId']").GetAttributeValue("value", "")},
-                    {"kind", htmlForm.SelectSingleNode("input[@name='kind']").GetAttributeValue("value", "")},
-                    {"dataName", htmlForm.SelectSingleNode("input[@name='dataName']").GetAttributeValue("value", "")},
-                    {"xnxq", htmlForm.SelectSingleNode("input[@name='xnxq']").GetAttributeValue("value", "")},
-                    {"teacherId", htmlForm.SelectSingleNode("input[@name='teacherId']").GetAttributeValue("value", "")},
-                    {"teacherName", htmlForm.SelectSingleNode("input[@name='teacherName']").GetAttributeValue("value", "")},
-                    {"code", htmlForm.SelectSingleNode("input[@name='code']").GetAttributeValue("value", "")},
-                    {"kcmc", htmlForm.SelectSingleNode("input[@name='kcmc']").GetAttributeValue("value", "")},
-                    { "suggestDetail", ""}
+                    { "GROUPNO", item.GROUPNO },
+                    { "PJLXDM", item.PJLXDM },
+                    { "XUH", Convert.ToString(item.XUH) }
                 };
+                var response = await evaluateClient.PostAsync ("https://jwxt.whut.edu.cn/jwapp/sys/pjapp/api/wdpj/getWjtxxx.do", new  FormUrlEncodedContent(form));
+                var json = await response.Content.ReadFromJsonAsync<JsonElement>();
 
-                var table = htmlForm.SelectNodes("table/tbody/tr[@class='suject-box']");
-                foreach (var tr in table)
+                var tt = ParseParam(json, item);
+                form = new Dictionary<string, string>()
                 {
-                    if (tr.SelectSingleNode("td/div[@class='exam-select' and @data-code='A']/i").GetAttributeValue("class", "") == "fa fa-square-o")
-                    {
-                        var codeA = tr.SelectSingleNode("td/div[@class='exam-select' and @data-code='A']");
-                        var form = new Dictionary<string, string>()
-                        {
-                            {
-                                "eduTaskRecord", ParseParam(new Dictionary<string, object>(dict)
-                                {
-                                    {"tabId", codeA.GetAttributeValue("data-tab", "") },
-                                    {"subjectId", codeA.GetAttributeValue("data-subject", "")},
-                                    {"optionId", codeA.GetAttributeValue("data-option", "")},
-                                    {"optionCode", "A"},
-                                    {"saved", true}
-                                })
-                            }
-                        };
-                        var aRes = await evaluateClient.PostAsync("http://218.197.101.69:8080/edu/task/record/save", new FormUrlEncodedContent(form));
-                        var json = await aRes.Content.ReadFromJsonAsync<JsonElement>();
-                        if (!json.GetProperty("success").GetBoolean()) return false;
-                    }
-                }
-                var saveForm = new Dictionary<string, string>()
-                {
-                    {"eduTask", ParseParam(new Dictionary<string, object>(dict)
-                    {
-                        {"id", dict["taskId"]},
-                        {"status", "1"}
-                    })}
+                    {"requestParamStr", tt},
                 };
-                var saveRes = await evaluateClient.PostAsync("http://218.197.101.69:8080/edu/task/edit", new FormUrlEncodedContent(saveForm));
-                var saveJson = await saveRes.Content.ReadFromJsonAsync<JsonElement>();
-                if (! saveJson.GetProperty("success").GetBoolean()) return false;
-                await Task.Delay(new Random().Next(250, 1000));
+                response = await evaluateClient.PostAsync("https://jwxt.whut.edu.cn/jwapp/sys/pjapp/api/wdpj/calculateQuestionnaireAnswerScore.do", new  FormUrlEncodedContent(form));
+                response = await evaluateClient.PostAsync("https://jwxt.whut.edu.cn/jwapp/sys/pjapp/api/wdpj/commitQuestionnaireAnswer.do", new FormUrlEncodedContent(form));
+                if (((int)response.StatusCode) != 200) return false;
             }
             catch (Exception)
             {
@@ -264,24 +205,86 @@ namespace AutoEvaluate.Utils
             return true;
         }
 
-        private static string ParseParam(Dictionary<string, object> dict)
+        private static string ParseParam(JsonElement json, EvaluationItem item)
         {
-            var builder = new StringBuilder();
-            builder.Append("{");
-            foreach (var item in dict)
+            var teacher = json.GetProperty("datas").GetProperty("getWjtxxx").GetProperty("teachers")[0];
+            var pjgxid = teacher.GetProperty("PJGXID").GetString();
+            var pjzt = teacher.GetProperty("PJZT").GetString();
+            var df = teacher.GetProperty("DF").GetString();
+            var xuh = json.GetProperty("datas").GetProperty("getWjtxxx").GetProperty("XUH").GetInt32();
+            var wjid = json.GetProperty("datas").GetProperty("getWjtxxx").GetProperty("WJID").GetString();
+
+            var res = new PostJson[1];
+            var t = new PostJson()
             {
-                if (item.Value is int || item.Value is float) builder.Append($"\"{item.Key}\":{item.Value}");
-                else if (item.Value is bool)
+                KCM=item.CourseName,
+                PJZT=pjzt,
+                DF=df,
+                PJGXID=pjgxid,
+                XM=item.TeacherName,
+                XUH=xuh,
+                FJTXXX= json.GetProperty("datas").GetProperty("getWjtxxx").GetProperty("FJTXXX").GetRawText(),
+                WJID=wjid,
+            };
+            foreach (var j in json.GetProperty("datas").GetProperty("getWjtxxx").GetProperty("questionList").EnumerateArray ())
+            {
+                var temp = new DAJson()
                 {
-                    builder.Append($"\"{item.Key}\":");
-                    builder.Append((bool)item.Value ? "true" : "false");
+                    WJID=j.GetProperty("WJID").GetString()!,
+                    TMID=j.GetProperty("TMID").GetString()!,
+                    TX=j.GetProperty("TX").GetString()!
+                };
+                if (j.GetProperty("questionOptions").GetArrayLength() > 0)
+                {
+                    foreach (var ttttt in j.GetProperty ("questionOptions").EnumerateArray ())
+                    {
+                        if (ttttt.GetProperty("PX").GetInt32() == 1 || ttttt.GetProperty("MC").GetString() == "非常好")
+                        {
+                            temp.DA = new DAItem() 
+                            { 
+                                TMXXID=ttttt.GetProperty("WID").GetString()!,
+                                FJXX=String.Empty,
+                            };
+                            break;
+                        }
+                    }
+                }else
+                {
+                    temp.DA = "";
                 }
-                else builder.Append($"\"{item.Key}\":\"{item.Value.ToString()}\"");
-                builder.Append(',');
+                t.DA.Add (temp);
             }
-            builder.Remove(builder.Length - 1, 1);
-            builder.Append("}");
-            return builder.ToString();
+            t.questionAnswers = JsonConvert.SerializeObject(t.DA);
+            res[0] = t;
+            return JsonConvert.SerializeObject (res);
+        }
+
+        private class PostJson
+        {
+            public string KCM = String.Empty;
+            public string PJZT = String.Empty;
+            public string? DF = null;
+            public string PJGXID = String.Empty;
+            public ArrayList DA = new ArrayList();
+            public string XM = String.Empty;
+            public int XUH = 1;
+            public string FJTXXX = String.Empty;
+            public string WJID = String.Empty;
+            public string questionAnswers = String.Empty;
+        }
+
+        private class DAJson
+        {
+            public string WJID = String.Empty;
+            public string TMID = String.Empty;
+            public string TX = String.Empty;
+            public Object? DA = null;
+        }
+
+        private class DAItem
+        {
+            public string TMXXID = String.Empty;
+            public string FJXX = String.Empty;
         }
     }
 }

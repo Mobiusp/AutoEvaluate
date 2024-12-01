@@ -13,8 +13,7 @@ namespace AutoEvaluate.Views
             InitializeComponent();
             EvaluationData = evaluationData;
             listView.ItemsSource = EvaluationData;
-            if (type == 1) TimeName.Text = "评教时间";
-            else TimeName.Text = "截止时间";
+            TimeName.Text = "截止时间";
         }
 
         public void AddItem(EvaluationItem item)

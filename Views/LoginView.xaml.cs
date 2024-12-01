@@ -45,7 +45,7 @@ namespace AutoEvaluate.Views
                 {
                     ((MainWindow)Application.Current.MainWindow).MainFrame.RemoveBackEntry();
                     ((MainWindow)Application.Current.MainWindow).MainFrame.Navigate(new LoginView(un));
-                    DialogWindow.ShowMsg(Application.Current.MainWindow, "获取课程信息失败（登录成功）\n请重试或确认网络状态（最好使用校园网）以及教务系统是否正常。\n如无法解决请反馈。≧ ﹏ ≦");
+                    DialogWindow.ShowMsg(Application.Current.MainWindow, "获取课程信息失败（登录成功）\n请重试或确认网络状态以及教务系统是否正常。\n如无法解决请反馈。≧ ﹏ ≦");
                     return;
                 }
                 var storyboard = ((((MainWindow)Application.Current.MainWindow).FindName("CommonStates") as VisualStateGroup)!.States[1] as VisualState)!.Storyboard;

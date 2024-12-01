@@ -61,26 +61,39 @@ namespace AutoEvaluate.Views
         private async void StartBtn(object sender, RoutedEventArgs e)
         {
             if (BtnDisable) { return; }
+            var res = await Evaluate.Refresh();
+            if (!res.Item1)
+            {
+                DialogWindow.ShowMsg(Application.Current.MainWindow, res.Item2);
+                return;
+            }
             BtnDisable = true;
             Owner.isRunning = true;
             ProcessBar.Visibility = Visibility.Visible;
             Bar.Width = 0;
             ProcessBarNum.Text = "  0%";
             List<EvaluationItem> needEvaluate = new List<EvaluationItem>();
+            List<int> need = new List<int>();
+            int ind = 0;
             foreach (EvaluationItem item in evaluationItems)
             {
-                if (item.IsChecked) needEvaluate.Add(item);
+                if (item.IsChecked)
+                {
+                    needEvaluate.Add(item);
+                    need.Add(ind);
+                }
+                ++ind;
             }
             FailedCnt = 0;
             needCnt = needEvaluate.Count;
             FinishedCnt = 0;
-            await Evaluate.InitEvaluateClient();
+            ind = 0;
             foreach (EvaluationItem item in needEvaluate) 
             {
-                bool result = await Evaluate.EvaluateCourse(item.Id);
+                bool result = await Evaluate.EvaluateCourse(item);
                 if (result)
                 {
-                    ListViewItem t = (ListViewItem)listView.ItemContainerGenerator.ContainerFromItem(evaluationItems[0]);
+                    ListViewItem t = (ListViewItem)listView.ItemContainerGenerator.ContainerFromItem(evaluationItems[need[ind]]);
                     var container = VisualTreeHelper.GetChild((VisualTreeHelper.GetChild(t, 0) as Border)!.Child, 0);
                     var storyborad = (((container as Grid)!.FindName("CommonStates") as VisualStateGroup)!.States[1] as VisualState)!.Storyboard;
                     storyborad.Completed += (s, args) =>
@@ -95,6 +108,7 @@ namespace AutoEvaluate.Views
                 ++FinishedCnt;
                 ProcessBarNum.Text = string.Format("{0,3}", (int)((double)FinishedCnt / needCnt * 100)) + "%";
                 Bar.Width = ((double)FinishedCnt / needCnt) * 400;
+                ++ind;
             }
             string message = $"评教完成\n需评教课程数：{needCnt}\n评教成功：{needCnt - FailedCnt} 评教失败：{FailedCnt}";
             if (FailedCnt > 0) message += "失败原因可能为：\n1.该课程评教已截止\n2.该课程在脚本启动过程中已被评教\n3.网络状态较差或教务系统出错\n4.脚本出现错误";
