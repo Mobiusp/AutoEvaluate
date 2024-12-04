@@ -1,10 +1,8 @@
 ﻿using AutoEvaluate.Utils;
-using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 
 namespace AutoEvaluate.Views
@@ -18,17 +16,6 @@ namespace AutoEvaluate.Views
         public EvaluateView(EvaluationData evaluationData, string un)
         {
             InitializeComponent();
-            var assembly = Assembly.GetExecutingAssembly();
-            var resourceStream = assembly.GetManifestResourceStream("AutoEvaluate.Images.github.png");
-            if (resourceStream != null)
-            {
-                BitmapImage bitmap = new BitmapImage();
-                bitmap.BeginInit();
-                bitmap.StreamSource = resourceStream;
-                bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                bitmap.EndInit();
-                GithubImg.Source = bitmap;
-            }
             Frame.JournalOwnership = JournalOwnership.OwnsJournal;
             pages.Add(new NoCheckBoxEvaluateView(evaluationData.UnexpiredOrNotStarted, 2));
             pages.Add(new NoCheckBoxEvaluateView(evaluationData.Evaluated, 1));
